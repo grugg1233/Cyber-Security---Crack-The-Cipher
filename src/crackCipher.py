@@ -79,14 +79,10 @@ def crack(cipher: str) -> str:
     decrypt = "".join(char_list)
     return decrypt
 
-def main(): 
-    ct = input("Enter the Cipher Text")
-    print(f"\nCipher is : {ct}")
-    first_pass_decrpyt = crack(ct.upper())
-    print(first_pass_decrpyt)
+def manual_mode():
+    print('\nmanual mode')
+    return None
 
-if __name__ == "__main__": 
-    main() 
 
 def loadDataNew():
     #data loading
@@ -122,5 +118,30 @@ def loadDataNew():
     print("Copied to:", dest_dir)
     print("Contents:", os.listdir(dest_dir))
 
+
+
+def ai_mode():
+    print('\nai mode')
+    ans = input("Do you need to downoad the dataset: (y/n)")
+    if ans == 'y':
+        loadDataNew()
+
+    
+    return None
+
+def main(): 
+    ct = input("Enter the Cipher Text")
+    print(f"\nCipher is : {ct}")
+    first_pass_decrpyt = crack(ct.upper())
+    print(first_pass_decrpyt)
+
+    ai_or_manual = input("would you like to crack the cipher manually or using ai ? type 'a' for ai mode or 'm' for manual")
+    if ai_or_manual.lower() == 'm': 
+        manual_mode()        
+    elif ai_or_manual.lower() == 'a':
+        ai_mode()
+
+if __name__ == "__main__": 
+    main() 
 
 # MOBUEWO LI QOUOYNYVA PZYF BOPPOQ IEC GQO EVO ES PZO SOM UZEFOV PE NYFYP CF GP PZO SYSPZ VOJP WEVPZ GVK PGDO TGQP ES PZO OBOUPYEV TQEUOFF MO ZETO PZGP IEC ZGNO PZO TEFFYLYBYPI PE AYNO CF PZO TBOGFCQO ES IECQ UEWTGVI GVK PZGP IEC GUUOTP PZ  ZEVECQ GF MOBB GF PZO QOFTEVFYLYBYPI ES PZYF GFFYAVWOVP PZYF IOGQ PZO WOOPYVA MYBB PGDO TBGUO GP DOVFYVAPEV VYVO PGDO PZO LCF PZQOO ZCVKQOK PMOBNO FONOV FPGPYEVF SQEW PZO UOVPQGB DOOT PZO GKKQOFF GF MOBB GF PZO KGI G FOUQOP LOFP QOAGQKF
