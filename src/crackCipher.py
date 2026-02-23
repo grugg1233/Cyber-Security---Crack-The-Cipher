@@ -6,8 +6,7 @@ commonFreq = "ETAOINSHRDLCUMWFGYPBVKJXQZ"
 lcf = [c for c in commonFreq]
 commonVals = [ 0.12702, 0.09056, 0.08167, 0.07507, 0.06966, 0.06749, 0.06327, 0.06094, 0.05987, 0.04253, 0.04025, 0.02782, 0.02758, 0.02406, 0.02360, 0.02228, 0.02015, 0.01974, 0.01929, 0.01492, 0.00978, 0.00772, 0.00153, 0.00150, 0.00095, 0.00074 ]
 
-
-
+history = {}
 
 def freq(cipher: str) -> dict:
     d = {}
@@ -49,7 +48,6 @@ def crack(cipher: str) -> str:
         barW = 0.5
         print(f"{len(commonFreq)}\n")
 
-
         print(f"length of both keys and vals : {len(letterKeys), len(lettervals)}")
         plt.bar(letterKeys, lettervals, color='gray', edgecolor='black', width=barW, label='Cipher Frequencies')
         plt.bar(lcf, commonVals, color='k',edgecolor='white', width=barW, label='Common Frequencies')
@@ -71,6 +69,8 @@ def crack(cipher: str) -> str:
     print(cipher_to_common)
     char_list = []
     
+    history= cipher_to_common 
+
     for c in cipher:
         if not c.isalpha(): 
             char_list.append(c) 
@@ -79,67 +79,22 @@ def crack(cipher: str) -> str:
     decrypt = "".join(char_list)
     return decrypt
 
-def manual_mode():
-    print('\nmanual mode')
-    return None
-
-
-def loadDataNew():
-    #data loading
-    import os, json
-    import pandas as pd
-    import kagglehub
-    import shutil
-
-    dir_path = kagglehub.dataset_download("bwandowando/479k-english-words")
-    json_path = os.path.join(dir_path, "words_dictionary.json")
-    with open(json_path, "r", encoding="utf-8") as f:
-        d = json.load(f)
-
-    df = pd.DataFrame({"word": list(d.keys()), "value": list(d.values())})
-    print(df.head())
-    print(df.shape)
-    print(dir_path)
-
-
-    # Destination inside your project
-    dest_dir = os.path.join(os.getcwd(), "data", "479k-english-words")
-
-    # Create destination folder if it doesn't exist
-    os.makedirs(dest_dir, exist_ok=True)
-
-    # Copy files
-    for filename in os.listdir(dir_path):
-        shutil.copy2(
-            os.path.join(dir_path, filename),
-            os.path.join(dest_dir, filename)
-        )
-
-    print("Copied to:", dest_dir)
-    print("Contents:", os.listdir(dest_dir))
-
-
-
-def ai_mode():
-    print('\nai mode')
-    ans = input("Do you need to downoad the dataset: (y/n)")
-    if ans == 'y':
-        loadDataNew()
-
-    
-    return None
+def manualSwap():
+    pass
 
 def main(): 
-    ct = input("Enter the Cipher Text")
-    print(f"\nCipher is : {ct}")
+    ct = input("Enter the Cipher Text: ")
     first_pass_decrpyt = crack(ct.upper())
     print(first_pass_decrpyt)
 
-    ai_or_manual = input("would you like to crack the cipher manually or using ai ? type 'a' for ai mode or 'm' for manual")
-    if ai_or_manual.lower() == 'm': 
-        manual_mode()        
-    elif ai_or_manual.lower() == 'a':
-        ai_mode()
+    while True:
+        ans = input("Do you want to change any swap that was made? ")
+        if ans == "No":
+            break
+        else:
+            change = input("What do you want to change? ex: YH")
+
+
 
 if __name__ == "__main__": 
     main() 
