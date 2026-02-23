@@ -84,6 +84,7 @@ def manualSwap():
 
 def main(): 
     ct = input("Enter the Cipher Text: ")
+    print(f"\nCipher is : {ct}")
     first_pass_decrpyt = crack(ct.upper())
     print(first_pass_decrpyt)
 
