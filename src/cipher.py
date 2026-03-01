@@ -2,7 +2,10 @@ import numpy as np
 from operator import itemgetter
 
 # global from : https://mathcenter.oxford.emory.edu/site/math125/englishLetterFreqs/
+
+# The most common letters in English in order:
 commonFreq = "ETAOINSHRDLCUMWFGYPBVKJXQZ"
+# And their frequencies: 
 lcf = [c for c in commonFreq]
 commonVals = [
     0.12702,
@@ -33,7 +36,7 @@ commonVals = [
     0.00074,
 ]
 
-
+# Calculating the freq. of each letter in the cipher text and return a dictionary with result
 def freq(cipher: str) -> dict:
     d = {}
     ignore = {}
@@ -48,6 +51,8 @@ def freq(cipher: str) -> dict:
                 ignore[ch] += 1
             else:
                 ignore[ch] = 1
+    
+    # Add missing letters with 0 frequency to avoid errors
     for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         if c not in d:
             d[c] = 0
@@ -56,17 +61,20 @@ def freq(cipher: str) -> dict:
         d[x] /= len(cipher) - sum(list(ignore.values()))
     return d
 
-
+# Using our freq. analysis result to do the first round of decryption
 def crack(cipher: str) -> str:
     mapOfFreq = freq(cipher)
 
     letterKeys = list(mapOfFreq.keys())
     lettervals = list(mapOfFreq.values())
-    print(f"Sum of values : {sum(lettervals)}")
+
+    # Debugging purposes:
+    # print(f"DEBUG: Sum of values : {sum(lettervals)}")
 
     sortedMap = sorted(zip(letterKeys, lettervals), key=itemgetter(1), reverse=True)
 
-    print("\n", sortedMap)
+    print("\nSorted Map of Cipher Letter Frequencies:")
+    print(sortedMap)
 
     cipher_to_common = {}
     usedL = set()
@@ -78,12 +86,18 @@ def crack(cipher: str) -> str:
         cipher_letter = sortedMap[i][0]
         common_letter = commonFreq[j]
 
+        # if either letter is already used, skip to the next one
         if cipher_letter in usedL:
             i += 1
             continue
 
         if common_letter in usedL:
             j += 1
+            continue
+
+        # this is to avoid having the same letter map to itself and have bugs down the line like (C -> C) and (C -> D) at the same time
+        if cipher_letter == common_letter:
+            i += 1
             continue
 
         cipher_to_common[cipher_letter] = common_letter
@@ -111,7 +125,7 @@ def crack(cipher: str) -> str:
     decrypt = "".join(char_list)
     return decrypt
 
-
+# function for manual swapping of letters
 def manualSwap(change):
     global history
 
@@ -131,17 +145,23 @@ def manualSwap(change):
 def main():
     ct = input("Enter the Cipher Text: ")
     decrypt = crack(ct.upper())
-    print("\n", decrypt)
+
+    # 2 print statements like this to avoid the one extra whitespace before the result
+    print("\n")
+    print(decrypt)
 
     global history
 
+    print("\n*** Type 'DONE' to stop ***")
     while True:
-        ans = input("\nDo you want to change any swap that was made? ")
-        if ans == "No" or ans == "no" or ans == "NO" or ans == "N" or ans == "n":
+        ans = input("\nWhat do you want to change? (eg., YH or DONE): ")
+
+        if ans == "DONE" or ans == "done":
+            print("\n\n\n\n-- Your Final Decryption -------------\n")
+            print(decrypt)
             break
         else:
-            change = input("\nWhat do you want to change? (eg: YH) : ")
-            change = change.upper()
+            change = ans.upper()
 
             if len(change) != 2:
                 print("Incorrect input")
@@ -163,7 +183,8 @@ def main():
 
             decrypt = "".join(char_list)
 
-            print("\n", decrypt)
+            print("\n-- NEW RESULT -------------")
+            print(decrypt)
 
 
 if __name__ == "__main__":
