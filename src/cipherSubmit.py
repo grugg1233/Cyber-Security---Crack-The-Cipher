@@ -296,7 +296,7 @@ def main():
         #display current decoding step
         plain = decode(ct, mapping)
         #display trigrams
-        trigs = top_trigrams(plain, n=10)
+        trigs = top_trigrams(plain, n=3)
         print("\n[Top Trigrams (Decrypted)]")
         if not trigs:
             print("  No trigrams found (need at least 3 letters).")
