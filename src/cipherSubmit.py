@@ -123,7 +123,7 @@ def initial_reciprocal_mapping_by_frequency(ct: str) -> dict:
 
     return mapping
 
-def decode(text: str, mapping: dict) -> str:
+def decode(text: str, mapping: dict[str, str]) -> str:
     out = []
     #making the substitutions in the actual cipher
     for ch in text:
@@ -134,8 +134,9 @@ def decode(text: str, mapping: dict) -> str:
             out.append(ch)
     return "".join(out)
 
-def associate(mapping: dict, a: str, b: str) -> None:
-    #association in plce of swapping so any 2 letters a and b can be associated at runtime
+
+def associate(mapping: dict[str, str], a: str, b: str) -> None:
+     #association in plce of swapping so any 2 letters a and b can be associated at runtime
     a = a.upper()
     b = b.upper()
     if a not in ALPHABET or b not in ALPHABET:
@@ -143,24 +144,32 @@ def associate(mapping: dict, a: str, b: str) -> None:
     if a == b:
         return
 
-    old_a_partner = mapping.get(a, a)
-    old_b_partner = mapping.get(b, b)
 
+    c1 = mapping.get(a, a)
+    
 
-    set_pair(mapping, a, b)
-
-    # remove the pairing of the old partners to the associated values
-    orphans = {old_a_partner, old_b_partner} - {a, b}
-
-
-    if len(orphans) == 2:
-        o1, o2 = orphans
+    x = c1
+    y = b
+  
+    xp = mapping.get(x, x) 
+    yp = mapping.get(y, y)
+    
+    #remove the old partners mapping
+    oldP = {xp, yp} - {x, y}
+    
+  
+    set_pair(mapping, x, y)
+    
+ 
+    if len(oldP) == 2:
+        #map the oldpairs to eachother
+        o1, o2 = oldP
         set_pair(mapping, o1, o2)
     #if one of the letters was mapped to itself 
-    elif len(orphans) == 1:
-
-        o1 = orphans.pop()
+    elif len(oldP) == 1:
+        o1 = oldP.pop()
         set_pair(mapping, o1, o1)
+
 
 def top_trigrams(text: str, n: int = 10) -> list:
     #get all the letters in the text
@@ -208,9 +217,8 @@ def print_help():
     print("\nAvailable Commands")
     print("  load            - Enter a new ciphertext")
     print("  mapbyfreq       - map automatically by letter frequencies")
-    print("  assoc <L1> <L2> - Associate two letters (e.g., 'assoc A E')")
+    print("  <L1> <L2>       - Associate two letters (e.g., 'A E')")
     print("  reset           - Reset the mapping to defaults")
-    print("  show            - Display the current mapping, trigrams, and decrypted output")
     print("  graph           - Open the letter frequency bar chart")
     print("  check           - Check if the current mapping is perfectly reciprocal")
     print("  help            - Show this menu")
@@ -258,52 +266,48 @@ def main():
             mapping = make_identity_pairs()
             print("Mapping reset to identity pairs.")
             
-        elif cmd in ["assoc", "a"]:
-            if len(user_input) != 3:
-                print("Usage Error: Please use format 'assoc A B'")
-                continue
 
-            associate(mapping, user_input[1], user_input[2])
-            print(f"Associated '{user_input[1].upper()}' with '{user_input[2].upper()}'.")
-
-                
-        elif cmd == "show":
-            if not ct:
-                print("No ciphertext loaded. Type 'load' first.")
-                continue
-            
-
-            print("\n[Current Mapping]")
-            #display mapping 
-            map_strs = [f"{c}->{mapping.get(c, c)}" for c in ALPHABET]
-            for i in range(0, 26, 6):
-                print("  " + "   ".join(map_strs[i:i+6]))
-
-            #display current decoding step
-            plain = decode(ct, mapping)
-            #display trigrams
-            trigs = top_trigrams(plain, n=10)
-            print("\n[Top Trigrams (Decrypted)]")
-            if not trigs:
-                print("  No trigrams found (need at least 3 letters).")
-            else:
-                for i, (tri, k) in enumerate(trigs, start=1):
-                    print(f"  {i:2d}) {tri} -> {k}")
-                    
-
-            print("\n[Decrypted Output]")
-            print(plain)
-
-            
         elif cmd == "graph":
             show_graph(ct)
             
         elif cmd == "check":
             ok = is_reciprocal(mapping)
             print(f"Reciprocal Mapping OK? {ok}")
-            
+        elif len(cmd) == 1:
+            if len(user_input) != 2:
+                print("Usage Error: Please use format ': A B' or 'a A B' ")
+                continue
+            associate(mapping, user_input[0], user_input[1])
+            print(f"Associated '{user_input[0].upper()}' with '{user_input[1].upper()}'.")
+        
         else:
             print("Unknown command. Type 'help' for options.")
+
+        if not ct:
+            print("No ciphertext loaded. Type 'load' first.")
+            continue
+        
+        print("\n[Current Mapping]")
+        #display mapping 
+        map_strs = [f"{c}->{mapping.get(c, c)}" for c in ALPHABET]
+        for i in range(0, 26, 6):
+            print("  " + "   ".join(map_strs[i:i+6]))
+
+        #display current decoding step
+        plain = decode(ct, mapping)
+        #display trigrams
+        trigs = top_trigrams(plain, n=10)
+        print("\n[Top Trigrams (Decrypted)]")
+        if not trigs:
+            print("  No trigrams found (need at least 3 letters).")
+        else:
+            for i, (tri, k) in enumerate(trigs, start=1):
+                print(f"  {i:2d}) {tri} -> {k}")
+                
+
+        print("\n[Decrypted Output]")
+        print(plain)
+        
 
 if __name__ == "__main__":
     main()
