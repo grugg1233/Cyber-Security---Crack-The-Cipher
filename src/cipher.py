@@ -137,7 +137,7 @@ def main():
 
     while True:
         ans = input("\nDo you want to change any swap that was made? ")
-        if ans == "No" or ans == "no" or ans == "NO":
+        if ans == "No" or ans == "no" or ans == "NO" or ans == "N" or ans == "n":
             break
         else:
             change = input("\nWhat do you want to change? (eg: YH) : ")
