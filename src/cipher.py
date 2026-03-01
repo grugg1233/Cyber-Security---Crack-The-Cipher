@@ -141,6 +141,22 @@ def manualSwap(change):
     history[a] = b_partner
     history[b] = a_partner
 
+# optional function the user can use to see top 3 trigrams in the CT
+def find_trigrams(ct: str) -> dict:
+    d = {} 
+    words = ct.split()
+    
+    for word in words:
+        if len(word) == 3:
+            if word in d:
+                d[word] += 1
+            else:
+                d[word] = 1
+
+    # after seeing how many times every 3-letter word shows, we get the top 3
+    top_3_trigrams = sorted(d.items(), key=lambda item: item[1], reverse=True)[:3]
+
+    return dict(top_3_trigrams)
 
 def main():
     ct = input("Enter the Cipher Text: ")
@@ -151,6 +167,23 @@ def main():
     print(decrypt)
 
     global history
+
+    while True:
+        ans = input("\n-- Want to see the top 3 trigrams? (Y/n): ")
+        if ans == 'Y' or ans == 'y':
+            trigrams = find_trigrams(ct)
+
+            if len(trigrams) == 0:
+                print("No trigrams found.")
+                break
+
+            i = 0
+            for word in trigrams:
+                i += 1
+                print(f"{i}) {word} -> {trigrams[word]} occurrences")
+            break
+        else:
+            break
 
     print("\n*** Type 'DONE' to stop ***")
     while True:
