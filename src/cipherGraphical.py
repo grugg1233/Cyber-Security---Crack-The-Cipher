@@ -6,6 +6,7 @@ from operator import itemgetter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+# global from : https://mathcenter.oxford.emory.edu/site/math125/englishLetterFreqs/
 COMMON_FREQ = "ETAOINSHRDLCUMWFGYPBVKJXQZ"
 COMMON_VALS = [
     0.12702, 0.09056, 0.08167, 0.07507, 0.06966, 0.06749, 0.06327, 0.06094, 0.05987,
@@ -14,69 +15,85 @@ COMMON_VALS = [
 ]
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-
-def letter_freq(text: str) -> dict[str, float]:
+def letter_freq(text: str) -> dict:
+    #get a list of all the letters in the cipher text
     letters = [ch for ch in text.upper() if ch.isalpha()]
     total = len(letters)
+    #initialize to 0 for all characters
     freqs = {c: 0.0 for c in ALPHABET}
     if total == 0:
         return freqs
+    #Counter is an object that returns counts of iterable objects in this case the list of letters
     counts = Counter(letters)
+    #compute the actual frequencies
     for c in ALPHABET:
         freqs[c] = counts.get(c, 0) / total
     return freqs
 
-
-def make_identity_pairs() -> dict[str, str]:
+def make_identity_pairs() -> dict:
+    #map each character to itself initially
     return {c: c for c in ALPHABET}
 
-
-def is_reciprocal(mapping: dict[str, str]) -> bool:
+def check_func(mapping: dict) -> bool:
+    # must define mappings for all letters (or at least behave like it does)
     for a in ALPHABET:
-        b = mapping.get(a, a)
+        if a not in mapping:
+            return False
+        b = mapping[a]
         if b not in ALPHABET:
             return False
-        if mapping.get(b, b) != a:
-            return False
-    return True
+    # outputs must be unique (a permutation)
+    images = [mapping[a] for a in ALPHABET]
+    return len(set(images)) == 26
+def set_pair(mapping: dict, a: str, b: str) -> None:
 
-
-def set_pair(mapping: dict[str, str], a: str, b: str) -> None:
     a = a.upper()
     b = b.upper()
+
     if a not in ALPHABET or b not in ALPHABET:
         raise ValueError("Letters must be A-Z.")
+    #association of 2 letters reciprocally
     mapping[a] = b
-    mapping[b] = a
 
 
-def initial_reciprocal_mapping_by_frequency(ciphertext: str) -> dict[str, str]:
-    freqs = letter_freq(ciphertext)
-    ranked = [c for c, _ in sorted(freqs.items(), key=itemgetter(1), reverse=True)]
+def initial_mapping_by_frequency(ct: str) -> dict:
+    freqs = letter_freq(ct)
+    # the original frequencies is indescending order so we sort this in reverse so they can be matched
+    ranked = sorted(freqs, key=freqs.get, reverse=True)
 
     mapping = make_identity_pairs()
-    used = set()
 
+    #to avoid duplicate entries
+    used_out = set()
+    assigned = set()
     i = 0
     j = 0
+    #map new pairs : most frequent in cipher to most frequent from common freq
     while i < len(ranked) and j < len(COMMON_FREQ):
         c = ranked[i]
         p = COMMON_FREQ[j]
         i += 1
         j += 1
 
-        if c in used or p in used:
+        if c in assigned or p in used_out:
             continue
 
         set_pair(mapping, c, p)
-        used.add(c)
-        used.add(p)
+        assigned.add(c)
+        used_out.add(p)
+
+
+    remaining_keys = [a for a in ALPHABET if a not in assigned]
+    remaining_outs = [a for a in ALPHABET if a not in used_out]
+
+    for k, v in zip(remaining_keys, remaining_outs):
+        set_pair(mapping, k, v)
 
     return mapping
 
-
 def decode(text: str, mapping: dict[str, str]) -> str:
     out = []
+    #making the substitutions in the actual cipher
     for ch in text:
         if ch.isalpha():
             up = ch.upper()
@@ -85,52 +102,52 @@ def decode(text: str, mapping: dict[str, str]) -> str:
             out.append(ch)
     return "".join(out)
 
-
 def associate(mapping: dict[str, str], a: str, b: str) -> None:
-    a = a.upper()
-    b = b.upper()
-    if a not in ALPHABET or b not in ALPHABET:
+    p = a.upper()
+    q = b.upper()
+
+    if p not in ALPHABET or q not in ALPHABET:
         raise ValueError("Letters must be A-Z.")
-    if a == b:
+    if p == q:
         return
 
+    cp = next((k for k, v in mapping.items() if v == p), None)
+    cq = next((k for k, v in mapping.items() if v == q), None)
 
-    c1 = mapping.get(a, a)
-    
+    if cp is None or cq is None:
+        print(f"Cannot swap '{p}' and '{q}' because one of them is not currently produced by the mapping.")
+        return
 
-    x = c1
-    y = b
-  
-    xp = mapping.get(x, x) 
-    yp = mapping.get(y, y)
-    
-  
-    orphans = {xp, yp} - {x, y}
-    
-  
-    set_pair(mapping, x, y)
-    
- 
-    if len(orphans) == 2:
-        o1, o2 = orphans
-        set_pair(mapping, o1, o2)
-    elif len(orphans) == 1:
-        o1 = orphans.pop()
-        set_pair(mapping, o1, o1)
+    mapping[cp], mapping[cq] = q, p
 
+def force_cipher_to_plain(mapping: dict[str,str], c: str, p: str) -> None:
+    c = c.upper()
+    p = p.upper()
+    if c not in ALPHABET or p not in ALPHABET:
+        raise ValueError("Letters must be A-Z.")
 
-def top_trigrams(text: str, n: int = 10) -> list[tuple[str, int]]:
+    old_p = mapping[c]                       # what c used to decode to
+    other = next((k for k, v in mapping.items() if v == p), None)
+
+    mapping[c] = p                           # set it
+
+    if other is not None and other != c:     # fix collision
+        mapping[other] = old_p
+
+def top_trigrams(text: str, n: int = 10) -> list:
+    #get all the letters in the text
     letters = [ch for ch in text.upper() if ch.isalpha()]
     if len(letters) < 3:
         return []
+    #compute the trigrams as the groupings of 3 letters from each initial position to the end of the text
     trigs = (letters[i] + letters[i + 1] + letters[i + 2] for i in range(len(letters) - 2))
+    # most commmon is a built in function that returns the n most common elements in descending order
     return Counter(trigs).most_common(n)
 
-
-class ReciprocalCrackerGUI(tk.Tk):
+class MonoalphabeticCrackerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Reciprocal Cipher Cracker")
+        self.title("Monoalphabetic Cipher Cracker")
         self.geometry("1200x800")
 
         self.ct = ""
@@ -168,20 +185,21 @@ class ReciprocalCrackerGUI(tk.Tk):
         self.tri_text = tk.Text(left, wrap="none", height=7)
         self.tri_text.pack(fill=tk.X)
 
-        assoc_frame = ttk.LabelFrame(right, text="Associate Pair", padding=10)
-        assoc_frame.pack(fill=tk.X, pady=5)
+        swap_frame = ttk.LabelFrame(right, text="Swap", padding=10)
+        swap_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Label(assoc_frame, text="Letter 1:").grid(row=0, column=0, sticky="w")
-        self.a_var = tk.StringVar()
-        self.a_box = ttk.Combobox(assoc_frame, textvariable=self.a_var, values=list(ALPHABET), width=3, state="readonly")
-        self.a_box.grid(row=0, column=1, padx=5)
+        ttk.Label(swap_frame, text="Type 2 letters (e.g., ET):").grid(row=0, column=0, sticky="w")
+        self.swap_entry = ttk.Entry(swap_frame, width=6)
+        self.swap_entry.grid(row=0, column=1, padx=6, sticky="w")
+        ttk.Button(swap_frame, text="Swap", command=self.do_swap).grid(row=1, column=0, columnspan=2, pady=8, sticky="ew")
 
-        ttk.Label(assoc_frame, text="Letter 2:").grid(row=1, column=0, sticky="w")
-        self.b_var = tk.StringVar()
-        self.b_box = ttk.Combobox(assoc_frame, textvariable=self.b_var, values=list(ALPHABET), width=3, state="readonly")
-        self.b_box.grid(row=1, column=1, padx=5)
+        force_frame = ttk.LabelFrame(right, text="assign", padding=10)
+        force_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Button(assoc_frame, text="ASOC", command=self.do_associate).grid(row=2, column=0, columnspan=2, pady=8, sticky="ew")
+        ttk.Label(force_frame, text="Type 2 letters (e.g., XE means X->E):").grid(row=0, column=0, sticky="w")
+        self.force_entry = ttk.Entry(force_frame, width=6)
+        self.force_entry.grid(row=0, column=1, padx=6, sticky="w")
+        ttk.Button(force_frame, text="Force", command=self.do_force).grid(row=1, column=0, columnspan=2, pady=8, sticky="ew")
 
         map_frame = ttk.LabelFrame(right, text="Mapping", padding=10)
         map_frame.pack(fill=tk.BOTH, expand=True, pady=5)
@@ -193,7 +211,7 @@ class ReciprocalCrackerGUI(tk.Tk):
         btns.pack(fill=tk.X)
 
         ttk.Button(btns, text="Update View", command=self.refresh_all).pack(fill=tk.X, pady=3)
-        ttk.Button(btns, text="Check Reciprocal", command=self.check_reciprocal).pack(fill=tk.X, pady=3)
+        ttk.Button(btns, text="Check Monoalphabetic", command=self.check_mapping).pack(fill=tk.X, pady=3)
 
     def _build_plot(self):
         plot_frame = ttk.LabelFrame(self, text="Letter Frequencies", padding=10)
@@ -217,21 +235,40 @@ class ReciprocalCrackerGUI(tk.Tk):
             self.load_cipher()
             if not self.ct.strip():
                 return
-        self.mapping = initial_reciprocal_mapping_by_frequency(self.ct.upper())
+        self.mapping = initial_mapping_by_frequency(self.ct.upper())
         self.refresh_all()
 
     def reset_mapping(self):
         self.mapping = make_identity_pairs()
         self.refresh_all()
 
-    def do_associate(self):
-        a = (self.a_var.get() or "").strip().upper()
-        b = (self.b_var.get() or "").strip().upper()
-        if len(a) != 1 or len(b) != 1:
-            messagebox.showwarning("Input", "Choose two letters.")
+    def _parse_two_letters(self, s: str) -> tuple[str, str] | None:
+        raw = "".join(ch for ch in (s or "").upper() if ch.isalpha())
+        if len(raw) != 2:
+            return None
+        return raw[0], raw[1]
+
+    def do_swap(self):
+        parsed = self._parse_two_letters(self.swap_entry.get())
+        if parsed is None:
+            messagebox.showwarning("Input", "Enter exactly 2 letters (e.g., ET).")
             return
+        a, b = parsed
         try:
             associate(self.mapping, a, b)
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+            return
+        self.refresh_all()
+
+    def do_force(self):
+        parsed = self._parse_two_letters(self.force_entry.get())
+        if parsed is None:
+            messagebox.showwarning("Input", "Enter exactly 2 letters (e.g., XE).")
+            return
+        c, p = parsed
+        try:
+            force_cipher_to_plain(self.mapping, c, p)
         except ValueError as e:
             messagebox.showerror("Error", str(e))
             return
@@ -293,11 +330,10 @@ class ReciprocalCrackerGUI(tk.Tk):
         self.fig.tight_layout()
         self.canvas.draw()
 
-    def check_reciprocal(self):
-        ok = is_reciprocal(self.mapping)
-        messagebox.showinfo("Reciprocity Check", f"Reciprocal OK? {ok}")
-
+    def check_mapping(self):
+        ok = check_func(self.mapping)
+        messagebox.showinfo("Mapping Check", f"Mapping OK? {ok}")
 
 if __name__ == "__main__":
-    app = ReciprocalCrackerGUI()
+    app = MonoalphabeticCrackerGUI()
     app.mainloop()

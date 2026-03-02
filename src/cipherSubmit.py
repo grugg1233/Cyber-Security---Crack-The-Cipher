@@ -72,18 +72,17 @@ def make_identity_pairs() -> dict:
     #map each character to itself initially 
     return {c: c for c in ALPHABET}
 
-def is_reciprocal(mapping: dict) -> bool:
-    #sanity check for reciprocity of mapping 
+def check_func(mapping: dict) -> bool:
+    # must define mappings for all letters (or at least behave like it does)
     for a in ALPHABET:
-        #b is the pair of a 
-        b = mapping.get(a, a)
+        if a not in mapping:
+            return False
+        b = mapping[a]
         if b not in ALPHABET:
             return False
-        # check that a is the pair of b
-        if mapping.get(b, b) != a:
-            return False
-    return True
-
+    # outputs must be unique (a permutation)
+    images = [mapping[a] for a in ALPHABET]
+    return len(set(images)) == 26
 def set_pair(mapping: dict, a: str, b: str) -> None:
 
     a = a.upper()
@@ -93,9 +92,9 @@ def set_pair(mapping: dict, a: str, b: str) -> None:
         raise ValueError("Letters must be A-Z.")
     #association of 2 letters reciprocally 
     mapping[a] = b
-    mapping[b] = a
 
-def initial_reciprocal_mapping_by_frequency(ct: str) -> dict:
+
+def initial_mapping_by_frequency(ct: str) -> dict:
     freqs = letter_freq(ct)
     # the original frequencies is indescending order so we sort this in reverse so they can be matched
     ranked = sorted(freqs, key=freqs.get, reverse=True)
@@ -103,8 +102,8 @@ def initial_reciprocal_mapping_by_frequency(ct: str) -> dict:
     mapping = make_identity_pairs()
     
     #to avoid duplicate entries
-    used = set()
-
+    used_out = set()
+    assigned = set() 
     i = 0
     j = 0
     #map new pairs : most frequent in cipher to most frequent from common freq
@@ -114,13 +113,20 @@ def initial_reciprocal_mapping_by_frequency(ct: str) -> dict:
         i += 1
         j += 1
 
-        if c in used or p in used:
+        if c in assigned or p in used_out:
             continue
 
         set_pair(mapping, c, p)
-        used.add(c)
-        used.add(p)
+        assigned.add(c)
+        used_out.add(p)
 
+
+    remaining_keys = [a for a in ALPHABET if a not in assigned]
+    remaining_outs = [a for a in ALPHABET if a not in used_out]
+
+    for k, v in zip(remaining_keys, remaining_outs):
+        set_pair(mapping, k, v)
+    
     return mapping
 
 def decode(text: str, mapping: dict[str, str]) -> str:
@@ -134,42 +140,37 @@ def decode(text: str, mapping: dict[str, str]) -> str:
             out.append(ch)
     return "".join(out)
 
-
 def associate(mapping: dict[str, str], a: str, b: str) -> None:
-     #association in plce of swapping so any 2 letters a and b can be associated at runtime
-    a = a.upper()
-    b = b.upper()
-    if a not in ALPHABET or b not in ALPHABET:
+    p = a.upper()
+    q = b.upper()
+
+    if p not in ALPHABET or q not in ALPHABET:
         raise ValueError("Letters must be A-Z.")
-    if a == b:
+    if p == q:
         return
 
+    cp = next((k for k, v in mapping.items() if v == p), None)
+    cq = next((k for k, v in mapping.items() if v == q), None)
 
-    c1 = mapping.get(a, a)
-    
+    if cp is None or cq is None:
+        print(f"Cannot swap '{p}' and '{q}' because one of them is not currently produced by the mapping.")
+        return
 
-    x = c1
-    y = b
-  
-    xp = mapping.get(x, x) 
-    yp = mapping.get(y, y)
-    
-    #remove the old partners mapping
-    oldP = {xp, yp} - {x, y}
-    
-  
-    set_pair(mapping, x, y)
-    
- 
-    if len(oldP) == 2:
-        #map the oldpairs to eachother
-        o1, o2 = oldP
-        set_pair(mapping, o1, o2)
-    #if one of the letters was mapped to itself 
-    elif len(oldP) == 1:
-        o1 = oldP.pop()
-        set_pair(mapping, o1, o1)
+    mapping[cp], mapping[cq] = q, p
 
+def force_cipher_to_plain(mapping: dict[str,str], c: str, p: str) -> None:
+    c = c.upper()
+    p = p.upper()
+    if c not in ALPHABET or p not in ALPHABET:
+        raise ValueError("Letters must be A-Z.")
+
+    old_p = mapping[c]                       # what c used to decode to
+    other = next((k for k, v in mapping.items() if v == p), None)
+
+    mapping[c] = p                           # set it
+
+    if other is not None and other != c:     # fix collision
+        mapping[other] = old_p
 
 def top_trigrams(text: str, n: int = 10) -> list:
     #get all the letters in the text
@@ -217,96 +218,107 @@ def print_help():
     print("\nAvailable Commands")
     print("  load            - Enter a new ciphertext")
     print("  mapbyfreq       - map automatically by letter frequencies")
-    print("  <L1> <L2>       - Associate two letters (e.g., 'A E')")
+    print("  : <AB>          - Swap plaintext letters in current decode (e.g., ': ET')")
+    print("  = <AB>          - Force cipher->plain mapping (e.g., '= XE' means X->E)")
     print("  reset           - Reset the mapping to defaults")
     print("  graph           - Open the letter frequency bar chart")
-    print("  check           - Check if the current mapping is perfectly reciprocal")
+    print("  check           - Check if the current mapped monoalphabetically")
     print("  help            - Show this menu")
     print("  quit / exit     - Exit the program")
 
 def main():
-    print("Reciprocal Cipher Cracker")
-    print('Type "help" for a list of commands.')
-    
-    ct = ""
-    #initialize mapping of all letters to self i.e. a->a b->b etc
-    mapping = make_identity_pairs()
-    
-    print_help()
-    #crack loop 
-    while True:
+    try: 
+        print("Random Cipher Cracker")
+        print('Type "help" for a list of commands.')
         
-        user_input = input("\n> ").strip().split()
+        ct = ""
+        #initialize mapping of all letters to self i.e. a->a b->b etc
+        mapping = make_identity_pairs()
+        
+        print_help()
+        #crack loop 
+        while True:
             
-        if not user_input:
-            continue
-            
-        cmd = user_input[0].lower()
-
-        if cmd in ["quit", "exit"]:
-            print("Exiting...")
-            break
-            
-        elif cmd == "help":
-            print_help()
-            
-        elif cmd == "load":
-            print("Enter your ciphertext (press Enter to finish):")
-            ct = input(">> ").strip()
-            print("Ciphertext loaded successfully.")
-            
-        elif cmd == "mapbyfreq":
-            if not ct:
-                print("Error: You must load a ciphertext first.")
-            else:
-                mapping = initial_reciprocal_mapping_by_frequency(ct.upper())
-                print("Mapping by frequency.")
+            user_input = input("\n> ").strip().split()
                 
-        elif cmd == "reset":
-            mapping = make_identity_pairs()
-            print("Mapping reset to identity pairs.")
-            
-
-        elif cmd == "graph":
-            show_graph(ct)
-            
-        elif cmd == "check":
-            ok = is_reciprocal(mapping)
-            print(f"Reciprocal Mapping OK? {ok}")
-        elif len(cmd) == 1:
-            if len(user_input) != 2:
-                print("Usage Error: Please use format ': A B' or 'a A B' ")
+            if not user_input:
                 continue
-            associate(mapping, user_input[0], user_input[1])
-            print(f"Associated '{user_input[0].upper()}' with '{user_input[1].upper()}'.")
-        
-        else:
-            print("Unknown command. Type 'help' for options.")
+                
+            cmd = user_input[0].lower()
 
-        if not ct:
-            print("No ciphertext loaded. Type 'load' first.")
-            continue
-        
-        print("\n[Current Mapping]")
-        #display mapping 
-        map_strs = [f"{c}->{mapping.get(c, c)}" for c in ALPHABET]
-        for i in range(0, 26, 6):
-            print("  " + "   ".join(map_strs[i:i+6]))
-
-        #display current decoding step
-        plain = decode(ct, mapping)
-        #display trigrams
-        trigs = top_trigrams(plain, n=3)
-        print("\n[Top Trigrams (Decrypted)]")
-        if not trigs:
-            print("  No trigrams found (need at least 3 letters).")
-        else:
-            for i, (tri, k) in enumerate(trigs, start=1):
-                print(f"  {i:2d}) {tri} -> {k}")
+            if cmd in ["quit", "exit"]:
+                print("Exiting...")
+                break
+                
+            elif cmd == "help":
+                print_help()
+                
+            elif cmd == "load":
+                print("Enter your ciphertext (press Enter to finish):")
+                ct = input(">> ").strip()
+                print("Ciphertext loaded successfully.")
+                
+            elif cmd == "mapbyfreq":
+                if not ct:
+                    print("Error: You must load a ciphertext first.")
+                else:
+                    mapping = initial_mapping_by_frequency(ct.upper())
+                    print("Mapping by frequency.")
+                    
+            elif cmd == "reset":
+                mapping = make_identity_pairs()
+                print("Mapping reset to identity pairs.")
                 
 
-        print("\n[Decrypted Output]")
-        print(plain)
+            elif cmd == "graph":
+                show_graph(ct)
+                
+            elif cmd == "check":
+                ok = check_func(mapping)
+                print(f"Mapping OK? {ok}")
+            elif cmd == ":":
+                if len(user_input) != 2 or len(user_input[1]) != 2:
+                    print("Usage Error: Please use format ': AB' (two letters)")
+                    continue
+                a, b = user_input[1][0], user_input[1][1]
+                associate(mapping, a, b)
+                print(f"Swapped plaintext '{a.upper()}' <-> '{b.upper()}'.")
+            elif cmd == "=":
+                if len(user_input) != 2 or len(user_input[1]) != 2:
+                    print("Usage Error: Please use format '= AB' (two letters)")
+                    continue
+                c, p = user_input[1][0], user_input[1][1]
+                force_cipher_to_plain(mapping, c, p)
+                print(f"Forced cipher '{c.upper()}' -> plaintext '{p.upper()}'.")
+            else:
+                print("Unknown command. Type 'help' for options.")
+
+            if not ct:
+                print("No ciphertext loaded. Type 'load' first.")
+                continue
+            
+            print("\n[Current Mapping]")
+            #display mapping 
+            map_strs = [f"{c}->{mapping.get(c, c)}" for c in ALPHABET]
+            for i in range(0, 26, 6):
+                print("  " + "   ".join(map_strs[i:i+6]))
+
+            #display current decoding step
+            plain = decode(ct, mapping)
+            #display trigrams
+            trigs = top_trigrams(plain, n=3)
+            print("\n[Top Trigrams (Decrypted)]")
+            if not trigs:
+                print("  No trigrams found (need at least 3 letters).")
+            else:
+                for i, (tri, k) in enumerate(trigs, start=1):
+                    print(f"  {i:2d}) {tri} -> {k}")
+                    
+
+            print("\n[Decrypted Output]")
+            print(plain)
+    except KeyboardInterrupt: 
+        print("\ngoodbye!")
         
 
 if __name__ == "__main__":
