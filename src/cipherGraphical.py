@@ -144,12 +144,15 @@ def top_trigrams(text: str, n: int = 10) -> list:
     # most commmon is a built in function that returns the n most common elements in descending order
     return Counter(trigs).most_common(n)
 
+#graphical user interface 
+
 class MonoalphabeticCrackerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
+       # simple settings for the frame
         self.title("Monoalphabetic Cipher Cracker")
         self.geometry("1200x800")
-
+        #cipher text 
         self.ct = ""
         self.mapping = make_identity_pairs()
 
@@ -157,6 +160,7 @@ class MonoalphabeticCrackerGUI(tk.Tk):
         self._build_plot()
 
     def _build_ui(self):
+        
         top = ttk.Frame(self, padding=10)
         top.pack(side=tk.TOP, fill=tk.X)
 
