@@ -29,18 +29,16 @@ The logic and assumptions is as follows:
     6) the user can make an initial mapping that will do pairwise frequency substitution based soley on frequency alignment 
         i.e. most frequent cipher char maps to (->) e the most frequent common character according to our source 
     
-    7) users are then given the option to manually interact with cipher via the assoc x y option this will do a reciprocal association s.t. 
-        ... x->ox , y->oy, ox->x, oy->y ... 
-        will become 
-        ... x->y, y->x, ox->oy, oy->ox ... and we handle edge of a letter that origianly mapped to itself 
-    
+    7) users are then given the option to manually interact with cipher via the : command which is used to swap characters in the cipher text and = to assign a character to 
+    another in the character map.  
+
     8) the user will continue to manually associate characters using the map and commmon trigrams - computed using the built in Counter and most_common functions 
     as well as their current status of decryption using the show command 
 
     9) user can quit the program with quit or exit when done 
 
     9a) user can reset to origianl mapping with reset 
-    9b) user can check that the mapping is reciprocal using check comand 
+    9b) user can check that the mapping is monoalphabetic using check comand 
     
 """
 
